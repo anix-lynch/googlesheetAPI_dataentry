@@ -1,5 +1,23 @@
-# googlesheetAPI_dataentry
 # README: AI-Powered Data Entry Tool for Google Sheets
+
+## Table of Contents
+- [Project Overview](#project-overview)
+- [Use Cases](#use-cases)
+  - [Contact List Manager](#1-contact-list-manager)
+  - [Job Application Tracker](#2-job-application-tracker)
+- [Initial Setup](#initial-setup)
+  - [Step 1: Download and Install Ollama](#step-1-download-and-install-ollama)
+  - [Step 2: Python Environment](#step-2-python-environment)
+  - [Step 3: Install Dependencies](#step-3-install-dependencies)
+- [Google Cloud Configuration](#google-cloud-configuration)
+  - [Step 1: Create a Google Cloud Project](#step-1-create-a-google-cloud-project)
+  - [Step 2: Set Up OAuth Consent Screen](#step-2-set-up-oauth-consent-screen)
+  - [Step 3: Create OAuth Client ID](#step-3-create-oauth-client-id)
+  - [Step 4: Enable Google Sheets API](#step-4-enable-google-sheets-api)
+- [Capabilities of the Google Sheets API](#capabilities-of-the-google-sheets-api)
+- [Python Libraries for Google Sheets](#python-libraries-for-google-sheets)
+- [Running the Program](#running-the-program)
+- [Conclusion](#conclusion)
 
 ## Project Overview
 This project automates data entry using a Python-based AI agent powered by Ollama and integrated with the Google Sheets API. The AI agent parses user inputs and populates the Google Sheet accurately, reducing manual effort.
@@ -47,106 +65,52 @@ This project automates data entry using a Python-based AI agent powered by Ollam
 ### Step 4: Enable Google Sheets API
 - Go to **Library** in **APIs & Services**, search for **Google Sheets API**, and enable it.
 
-## Code Implementation
-### `googleapi.py`
-Handles authentication and creation of service instances for Google APIs.
-```python
-import os
-import pickle
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-import googleapiclient.errors
+## Capabilities of the Google Sheets API
+Here's a list of impressive capabilities that the Google Sheets API offers:
 
-def createService(client_secret_file, api_name, api_version, *scopes):
-    token_dir = 'token_files'
-    if not os.path.exists(token_dir):
-        os.makedirs(token_dir)
-    pickle_file = f'{token_dir}/token_{api_name}_{api_version}.pickle'
+- **Read and Write Data**: Access and modify spreadsheet data programmatically.
+- **Batch Updates**: Perform multiple updates to a spreadsheet in one request to optimize performance.
+- **Formatting**: Apply text, cell, and number formatting to make your sheets visually appealing.
+- **Conditional Formatting**: Set up rules to highlight cells automatically based on their values.
+- **Data Validation**: Implement rules to restrict data entry to specific formats or values.
+- **Pivot Tables**: Create and manage pivot tables to summarize data dynamically.
+- **Charts and Graphs**: Generate charts from data to visualize trends and comparisons.
+- **Filters and Sorting**: Apply filters and sort data programmatically.
+- **Cell Merging**: Merge and unmerge cells for custom layouts.
+- **Named Ranges**: Create named ranges for easier data management and referencing.
+- **Protected Sheets and Ranges**: Set permissions to protect certain parts of the sheet from editing.
+- **Add Sheets and Tabs**: Create and delete individual sheets within a spreadsheet.
+- **Comments and Notes**: Add or modify comments to provide context for specific cells.
+- **Custom Formulas**: Insert and evaluate custom formulas as needed.
+- **Real-time Collaboration**: Integrate with other apps to support simultaneous edits and updates.
 
-    credentials = None
-    if os.path.exists(pickle_file):
-        with open(pickle_file, 'rb') as token:
-            credentials = pickle.load(token)
-    
-    if not credentials or not credentials.valid:
-        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            client_secret_file, scopes
-        )
-        credentials = flow.run_console()
-        with open(pickle_file, 'wb') as token:
-            pickle.dump(credentials, token)
+These features make the Google Sheets API a powerful tool for automating workflows, managing data efficiently, and enhancing collaboration.
 
-    service = googleapiclient.discovery.build(api_name, api_version, credentials=credentials)
-    return service
-```
+## Python Libraries for Google Sheets
+The main Python library used to work with Google Sheets is:
 
-### `app.py`
-Main script to run the AI-powered data entry tool.
-```python
-import json
-from googleapi import createService
-from function_calling import llamaClient
+### `google-api-python-client`
 
-def constructSheetsService():
-    CLIENT_SECRET_FILE = 'ClientSecret.json'
-    API_NAME = 'sheets'
-    API_VERSION = 'v4'
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-    return createService(CLIENT_SECRET_FILE, API_NAME, API_VERSION, *SCOPES)
+**Features**:
+- Provides comprehensive functionality for interacting with Google services, including Sheets.
+- Supports reading and writing data, formatting, batch updates, and more.
+- Requires OAuth 2.0 authentication for secure data access.
 
-def addSheetEntry(service, spreadsheet_id, first_name, last_name, age):
-    range_name = 'Sheet1!A1:C'
-    body = {
-        'values': [[first_name, last_name, age]]
-    }
-    result = service.spreadsheets().values().append(
-        spreadsheetId=spreadsheet_id,
-        range=range_name,
-        valueInputOption='RAW',
-        insertDataOption='INSERT_ROWS',
-        body=body
-    ).execute()
-    return result
+### Other Supporting Libraries:
+- **`google-auth`**: Manages authentication.
+- **`google-auth-oauthlib`**: Handles OAuth 2.0 authorization flow.
+- **`google-auth-httplib2`**: Integrates authentication with HTTP for API requests.
 
-def run():
-    model_id = 'lama3.18b'
-    client = llamaClient()
-    client.pull_model(model_id)
-    spreadsheet_id = 'your_google_sheet_id'
-    service = constructSheetsService()
-
-    messages = [{'role': 'system', 'content': 'Data entry agent for Google Sheets.'}]
-    while True:
-        user_input = input("Enter data (or type 'exit' to quit): ")
-        if user_input.lower() == 'exit':
-            print("Goodbye!")
-            break
-
-        messages.append({'role': 'user', 'content': user_input})
-        response = client.chat(model_id, messages)
-
-        if 'tool_calls' in response:
-            for tool_call in response['tool_calls']:
-                function_name = tool_call['name']
-                arguments = tool_call['arguments']
-                if function_name == 'addSheetEntry':
-                    result = addSheetEntry(service, spreadsheet_id, **arguments)
-                    print("Entry added successfully.")
-        else:
-            print("No valid tool call detected.")
-
-if __name__ == "__main__":
-    run()
-```
+These libraries, combined, allow you to create Python applications that can seamlessly interact with Google Sheets for various automation tasks.
 
 ## Running the Program
 - Run the script:
   ```bash
   python app.py
   ```
-- Enter contact or job application data to test the AI agent.
+- Enter the data as prompted to test the AI agent's ability to populate the Google Sheet.
 - Type `exit` to stop the program.
 
 ## Conclusion
-This project demonstrates how to use Python, Ollama, and the Google Sheets API to build a powerful data entry tool. It can be customized for various use cases, such as managing contact lists or tracking job applications.
+This project demonstrates how to integrate Python, Ollama, and the Google Sheets API to build an AI-powered data entry tool. With the outlined capabilities and detailed setup, it can be adapted for various use cases such as managing contact lists and tracking job applications.
 
